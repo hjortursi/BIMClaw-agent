@@ -13,10 +13,13 @@ logs/
 groups/*
 !groups/main/
 !groups/global/
+!groups/bim-default/
 groups/main/*
 groups/global/*
+groups/bim-default/*
 !groups/main/CLAUDE.md
 !groups/global/CLAUDE.md
+!groups/bim-default/CLAUDE.md
 
 # Secrets
 *.keys.json
