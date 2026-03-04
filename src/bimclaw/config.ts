@@ -64,7 +64,8 @@ function mergeProviderConfig(
   source?: BimOAuthConfig,
 ): BimOAuthConfig | undefined {
   const prefix = provider.toUpperCase();
-  const accessToken = source?.accessToken || envValue(`BIMCLAW_${prefix}_ACCESS_TOKEN`);
+  const accessToken =
+    source?.accessToken || envValue(`BIMCLAW_${prefix}_ACCESS_TOKEN`);
   if (!accessToken) return undefined;
 
   const baseUrlEnv = envValue(`BIMCLAW_${prefix}_BASE_URL`);
@@ -136,7 +137,8 @@ export function summarizeBimConfig(group: RegisteredGroup): {
     hasProcoreToken: !!config.procore?.accessToken,
     hasAccToken: !!config.acc?.accessToken,
     toolPermissions:
-      (config.toolPermissions as BimToolPermissions) || DEFAULT_TOOL_PERMISSIONS,
+      (config.toolPermissions as BimToolPermissions) ||
+      DEFAULT_TOOL_PERMISSIONS,
     notificationPreferences:
       (config.notificationPreferences as BimNotificationPreferences) ||
       DEFAULT_NOTIFICATION_PREFERENCES,

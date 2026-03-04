@@ -396,7 +396,9 @@ export function getMessagesForChat(
     `;
 
   const rows = withBefore
-    ? (db.prepare(sql).all(chatJid, beforeTimestamp, safeLimit) as ChatMessageRecord[])
+    ? (db
+        .prepare(sql)
+        .all(chatJid, beforeTimestamp, safeLimit) as ChatMessageRecord[])
     : (db.prepare(sql).all(chatJid, safeLimit) as ChatMessageRecord[]);
 
   return rows.reverse();

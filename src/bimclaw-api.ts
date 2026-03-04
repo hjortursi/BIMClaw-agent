@@ -253,25 +253,30 @@ async function runAgentForApi(
   const responses: string[] = [];
 
   try {
-    const status = await runInQueue(deps.queue, chatJid, timeoutMs, async () => {
-      return deps.runAgent(group, prompt, chatJid, async (output) => {
-        if (!output.result) return;
-        const text = formatOutbound(output.result);
-        if (!text) return;
+    const status = await runInQueue(
+      deps.queue,
+      chatJid,
+      timeoutMs,
+      async () => {
+        return deps.runAgent(group, prompt, chatJid, async (output) => {
+          if (!output.result) return;
+          const text = formatOutbound(output.result);
+          if (!text) return;
 
-        responses.push(text);
-        storeMessageDirect({
-          id: `api-bot-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-          chat_jid: chatJid,
-          sender: 'bimclaw-agent',
-          sender_name: 'BIMClaw',
-          content: text,
-          timestamp: new Date().toISOString(),
-          is_from_me: true,
-          is_bot_message: true,
+          responses.push(text);
+          storeMessageDirect({
+            id: `api-bot-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+            chat_jid: chatJid,
+            sender: 'bimclaw-agent',
+            sender_name: 'BIMClaw',
+            content: text,
+            timestamp: new Date().toISOString(),
+            is_from_me: true,
+            is_bot_message: true,
+          });
         });
-      });
-    });
+      },
+    );
 
     if (status === 'error') {
       return {
@@ -346,7 +351,13 @@ async function handleSendMessage(
     return;
   }
 
-  const result = await runAgentForApi(deps, group, body.chatJid, prompt, timeoutMs);
+  const result = await runAgentForApi(
+    deps,
+    group,
+    body.chatJid,
+    prompt,
+    timeoutMs,
+  );
   writeJson(res, result.status === 'success' ? 200 : 500, {
     status: result.status,
     chatJid: body.chatJid,
@@ -556,7 +567,9 @@ async function routeRequest(
 
 export function startBimclawApiBridge(deps: BimclawApiDeps): void {
   if (!BIMCLAW_API_ENABLED) {
-    logger.info('BIMClaw API bridge disabled (set BIMCLAW_API_ENABLED=true to enable)');
+    logger.info(
+      'BIMClaw API bridge disabled (set BIMCLAW_API_ENABLED=true to enable)',
+    );
     return;
   }
 
