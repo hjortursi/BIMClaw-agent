@@ -1,0 +1,50 @@
+{
+  "tenantDefaults": {
+    "tenantId": "bimclaw-default",
+    "toolPermissions": {
+      "procoreTools": true,
+      "accTools": true,
+      "deadlineChecker": true,
+      "weeklySummary": true
+    },
+    "notificationPreferences": {
+      "deadlineAlerts": true,
+      "weeklySummary": true,
+      "daysBeforeDeadline": [7, 3, 1],
+      "deliveryChannel": "both",
+      "language": "is"
+    }
+  },
+  "groups": {
+    "whatsapp_bim-teymi": {
+      "tenantId": "verk-101",
+      "procore": {
+        "tenantId": "verk-101",
+        "accessToken": "<procore-access-token>",
+        "refreshToken": "<procore-refresh-token>",
+        "expiresAt": "2026-03-31T12:00:00.000Z",
+        "baseUrl": "https://api.procore.com"
+      },
+      "acc": {
+        "tenantId": "verk-101",
+        "accessToken": "<acc-access-token>",
+        "refreshToken": "<acc-refresh-token>",
+        "expiresAt": "2026-03-31T12:00:00.000Z",
+        "baseUrl": "https://developer.api.autodesk.com"
+      },
+      "toolPermissions": {
+        "procoreTools": true,
+        "accTools": true,
+        "deadlineChecker": true,
+        "weeklySummary": true
+      },
+      "notificationPreferences": {
+        "deadlineAlerts": true,
+        "weeklySummary": true,
+        "daysBeforeDeadline": [14, 7, 3, 1],
+        "deliveryChannel": "both",
+        "language": "is"
+      }
+    }
+  }
+}

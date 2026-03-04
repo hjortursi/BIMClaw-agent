@@ -4,6 +4,37 @@ export interface AdditionalMount {
   readonly?: boolean; // Default: true for safety
 }
 
+export interface BimOAuthConfig {
+  tenantId: string;
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: string; // ISO timestamp
+  baseUrl?: string;
+}
+
+export interface BimToolPermissions {
+  procoreTools: boolean;
+  accTools: boolean;
+  deadlineChecker: boolean;
+  weeklySummary: boolean;
+}
+
+export interface BimNotificationPreferences {
+  deadlineAlerts: boolean;
+  weeklySummary: boolean;
+  daysBeforeDeadline: number[];
+  deliveryChannel: 'chat' | 'dashboard' | 'both';
+  language: 'is' | 'en';
+}
+
+export interface BimGroupConfig {
+  tenantId: string;
+  procore?: BimOAuthConfig;
+  acc?: BimOAuthConfig;
+  toolPermissions?: Partial<BimToolPermissions>;
+  notificationPreferences?: Partial<BimNotificationPreferences>;
+}
+
 /**
  * Mount Allowlist - Security configuration for additional mounts
  * This file should be stored at ~/.config/nanoclaw/mount-allowlist.json
@@ -38,6 +69,7 @@ export interface RegisteredGroup {
   trigger: string;
   added_at: string;
   containerConfig?: ContainerConfig;
+  bimConfig?: BimGroupConfig;
   requiresTrigger?: boolean; // Default: true for groups, false for solo chats
   isMain?: boolean; // True for the main control group (no trigger, elevated privileges)
 }

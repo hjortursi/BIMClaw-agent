@@ -362,4 +362,36 @@ export class GroupQueue {
       'GroupQueue shutting down (containers detached, not killed)',
     );
   }
+
+  getStatus(): {
+    activeCount: number;
+    waitingGroups: string[];
+    shuttingDown: boolean;
+    groups: Array<{
+      groupJid: string;
+      active: boolean;
+      idleWaiting: boolean;
+      isTaskContainer: boolean;
+      pendingMessages: boolean;
+      pendingTaskCount: number;
+      runningTaskId: string | null;
+      retryCount: number;
+    }>;
+  } {
+    return {
+      activeCount: this.activeCount,
+      waitingGroups: [...this.waitingGroups],
+      shuttingDown: this.shuttingDown,
+      groups: [...this.groups.entries()].map(([groupJid, state]) => ({
+        groupJid,
+        active: state.active,
+        idleWaiting: state.idleWaiting,
+        isTaskContainer: state.isTaskContainer,
+        pendingMessages: state.pendingMessages,
+        pendingTaskCount: state.pendingTasks.length,
+        runningTaskId: state.runningTaskId,
+        retryCount: state.retryCount,
+      })),
+    };
+  }
 }

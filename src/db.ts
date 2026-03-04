@@ -80,6 +80,7 @@ function createSchema(database: Database.Database): void {
       trigger_pattern TEXT NOT NULL,
       added_at TEXT NOT NULL,
       container_config TEXT,
+      bim_config TEXT,
       requires_trigger INTEGER DEFAULT 1
     );
   `);
@@ -115,6 +116,13 @@ function createSchema(database: Database.Database): void {
     database.exec(
       `UPDATE registered_groups SET is_main = 1 WHERE folder = 'main'`,
     );
+  } catch {
+    /* column already exists */
+  }
+
+  // Add bim_config column if it doesn't exist (migration for existing DBs)
+  try {
+    database.exec(`ALTER TABLE registered_groups ADD COLUMN bim_config TEXT`);
   } catch {
     /* column already exists */
   }
@@ -353,6 +361,47 @@ export function getMessagesSince(
     .all(chatJid, sinceTimestamp, `${botPrefix}:%`) as NewMessage[];
 }
 
+export interface ChatMessageRecord {
+  id: string;
+  chat_jid: string;
+  sender: string;
+  sender_name: string;
+  content: string;
+  timestamp: string;
+  is_from_me: number;
+  is_bot_message: number;
+}
+
+export function getMessagesForChat(
+  chatJid: string,
+  limit = 100,
+  beforeTimestamp?: string,
+): ChatMessageRecord[] {
+  const safeLimit = Math.min(Math.max(limit, 1), 500);
+  const withBefore = !!beforeTimestamp;
+  const sql = withBefore
+    ? `
+      SELECT id, chat_jid, sender, sender_name, content, timestamp, is_from_me, is_bot_message
+      FROM messages
+      WHERE chat_jid = ? AND timestamp < ?
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `
+    : `
+      SELECT id, chat_jid, sender, sender_name, content, timestamp, is_from_me, is_bot_message
+      FROM messages
+      WHERE chat_jid = ?
+      ORDER BY timestamp DESC
+      LIMIT ?
+    `;
+
+  const rows = withBefore
+    ? (db.prepare(sql).all(chatJid, beforeTimestamp, safeLimit) as ChatMessageRecord[])
+    : (db.prepare(sql).all(chatJid, safeLimit) as ChatMessageRecord[]);
+
+  return rows.reverse();
+}
+
 export function createTask(
   task: Omit<ScheduledTask, 'last_run' | 'last_result'>,
 ): void {
@@ -542,6 +591,7 @@ export function getRegisteredGroup(
         trigger_pattern: string;
         added_at: string;
         container_config: string | null;
+        bim_config: string | null;
         requires_trigger: number | null;
         is_main: number | null;
       }
@@ -563,6 +613,7 @@ export function getRegisteredGroup(
     containerConfig: row.container_config
       ? JSON.parse(row.container_config)
       : undefined,
+    bimConfig: row.bim_config ? JSON.parse(row.bim_config) : undefined,
     requiresTrigger:
       row.requires_trigger === null ? undefined : row.requires_trigger === 1,
     isMain: row.is_main === 1 ? true : undefined,
@@ -574,8 +625,8 @@ export function setRegisteredGroup(jid: string, group: RegisteredGroup): void {
     throw new Error(`Invalid group folder "${group.folder}" for JID ${jid}`);
   }
   db.prepare(
-    `INSERT OR REPLACE INTO registered_groups (jid, name, folder, trigger_pattern, added_at, container_config, requires_trigger, is_main)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO registered_groups (jid, name, folder, trigger_pattern, added_at, container_config, bim_config, requires_trigger, is_main)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     jid,
     group.name,
@@ -583,6 +634,7 @@ export function setRegisteredGroup(jid: string, group: RegisteredGroup): void {
     group.trigger,
     group.added_at,
     group.containerConfig ? JSON.stringify(group.containerConfig) : null,
+    group.bimConfig ? JSON.stringify(group.bimConfig) : null,
     group.requiresTrigger === undefined ? 1 : group.requiresTrigger ? 1 : 0,
     group.isMain ? 1 : 0,
   );
@@ -596,6 +648,7 @@ export function getAllRegisteredGroups(): Record<string, RegisteredGroup> {
     trigger_pattern: string;
     added_at: string;
     container_config: string | null;
+    bim_config: string | null;
     requires_trigger: number | null;
     is_main: number | null;
   }>;
@@ -616,6 +669,7 @@ export function getAllRegisteredGroups(): Record<string, RegisteredGroup> {
       containerConfig: row.container_config
         ? JSON.parse(row.container_config)
         : undefined,
+      bimConfig: row.bim_config ? JSON.parse(row.bim_config) : undefined,
       requiresTrigger:
         row.requires_trigger === null ? undefined : row.requires_trigger === 1,
       isMain: row.is_main === 1 ? true : undefined,

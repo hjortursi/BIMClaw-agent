@@ -12,6 +12,7 @@ import {
   getChannelFactory,
   getRegisteredChannelNames,
 } from './channels/registry.js';
+import { startBimclawApiBridge } from './bimclaw-api.js';
 import {
   ContainerOutput,
   runContainerAgent,
@@ -39,7 +40,7 @@ import {
 } from './db.js';
 import { GroupQueue } from './group-queue.js';
 import { resolveGroupFolderPath } from './group-folder.js';
-import { startIpcWatcher } from './ipc.js';
+import { IpcDeps, startIpcWatcher } from './ipc.js';
 import { findChannel, formatMessages, formatOutbound } from './router.js';
 import {
   isSenderAllowed,
@@ -549,7 +550,7 @@ async function main(): Promise<void> {
       if (text) await channel.sendMessage(jid, text);
     },
   });
-  startIpcWatcher({
+  const ipcDeps: IpcDeps = {
     sendMessage: (jid, text) => {
       const channel = findChannel(channels, jid);
       if (!channel) throw new Error(`No channel for JID: ${jid}`);
@@ -567,6 +568,15 @@ async function main(): Promise<void> {
     getAvailableGroups,
     writeGroupsSnapshot: (gf, im, ag, rj) =>
       writeGroupsSnapshot(gf, im, ag, rj),
+  };
+  startIpcWatcher(ipcDeps);
+  startBimclawApiBridge({
+    queue,
+    registeredGroups: () => registeredGroups,
+    getAvailableGroups,
+    getSessions: () => sessions,
+    runAgent,
+    ipcDeps,
   });
   queue.setProcessMessagesFn(processGroupMessages);
   recoverPendingMessages();
