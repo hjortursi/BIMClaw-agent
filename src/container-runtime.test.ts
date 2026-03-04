@@ -10,6 +10,11 @@ vi.mock('./logger.js', () => ({
   },
 }));
 
+const mockReadEnvFile = vi.fn((_keys: string[]) => ({}));
+vi.mock('./env.js', () => ({
+  readEnvFile: (keys: string[]) => mockReadEnvFile(keys),
+}));
+
 // Mock child_process — store the mock fn so tests can configure it
 const mockExecSync = vi.fn();
 vi.mock('child_process', () => ({
@@ -18,8 +23,11 @@ vi.mock('child_process', () => ({
 
 import {
   CONTAINER_RUNTIME_BIN,
+  _resetRuntimeModeCacheForTests,
   readonlyMountArgs,
   stopContainer,
+  getAgentRuntimeMode,
+  isBareModeActive,
   ensureContainerRuntimeRunning,
   cleanupOrphans,
 } from './container-runtime.js';
@@ -27,6 +35,8 @@ import { logger } from './logger.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  delete process.env.BIMCLAW_BARE_MODE;
+  _resetRuntimeModeCacheForTests();
 });
 
 // --- Pure functions ---
@@ -42,6 +52,40 @@ describe('stopContainer', () => {
   it('returns stop command using CONTAINER_RUNTIME_BIN', () => {
     expect(stopContainer('nanoclaw-test-123')).toBe(
       `${CONTAINER_RUNTIME_BIN} stop nanoclaw-test-123`,
+    );
+  });
+});
+
+describe('runtime mode detection', () => {
+  it('uses bare mode when BIMCLAW_BARE_MODE=true', () => {
+    process.env.BIMCLAW_BARE_MODE = 'true';
+
+    expect(getAgentRuntimeMode()).toBe('bare');
+    expect(isBareModeActive()).toBe(true);
+    expect(mockExecSync).not.toHaveBeenCalled();
+  });
+
+  it('uses container mode when docker info succeeds', () => {
+    mockExecSync.mockReturnValueOnce('');
+
+    expect(getAgentRuntimeMode()).toBe('container');
+    expect(isBareModeActive()).toBe(false);
+    expect(mockExecSync).toHaveBeenCalledWith(`${CONTAINER_RUNTIME_BIN} info`, {
+      stdio: 'pipe',
+      timeout: 10000,
+    });
+  });
+
+  it('falls back to bare mode when docker is unavailable', () => {
+    mockExecSync.mockImplementationOnce(() => {
+      throw new Error('docker unavailable');
+    });
+
+    expect(getAgentRuntimeMode()).toBe('bare');
+    expect(isBareModeActive()).toBe(true);
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({ err: expect.any(Error) }),
+      'Container runtime unavailable, falling back to bare runner',
     );
   });
 });

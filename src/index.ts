@@ -15,13 +15,12 @@ import {
 import { startBimclawApiBridge } from './bimclaw-api.js';
 import {
   ContainerOutput,
-  runContainerAgent,
   writeGroupsSnapshot,
   writeTasksSnapshot,
 } from './container-runner.js';
 import {
-  cleanupOrphans,
-  ensureContainerRuntimeRunning,
+  ensureAgentRuntimeRunning,
+  runAgentWithRuntime,
 } from './container-runtime.js';
 import {
   getAllChats,
@@ -302,7 +301,7 @@ async function runAgent(
     : undefined;
 
   try {
-    const output = await runContainerAgent(
+    const output = await runAgentWithRuntime(
       group,
       {
         prompt,
@@ -457,8 +456,7 @@ function recoverPendingMessages(): void {
 }
 
 function ensureContainerSystemRunning(): void {
-  ensureContainerRuntimeRunning();
-  cleanupOrphans();
+  ensureAgentRuntimeRunning();
 }
 
 async function main(): Promise<void> {
@@ -481,11 +479,7 @@ async function main(): Promise<void> {
   const channelOpts = {
     onMessage: (chatJid: string, msg: NewMessage) => {
       // Sender allowlist drop mode: discard messages from denied senders before storing
-      if (
-        !msg.is_from_me &&
-        !msg.is_bot_message &&
-        registeredGroups[chatJid]
-      ) {
+      if (!msg.is_from_me && !msg.is_bot_message && registeredGroups[chatJid]) {
         const cfg = loadSenderAllowlist();
         if (
           shouldDropMessage(chatJid, cfg) &&
