@@ -523,8 +523,12 @@ async function main(): Promise<void> {
     await channel.connect();
   }
   if (channels.length === 0) {
-    logger.fatal('No channels connected');
-    process.exit(1);
+    if (process.env.BIMCLAW_API_ENABLED === 'true') {
+      logger.info('No channels connected — running in API-only mode');
+    } else {
+      logger.fatal('No channels connected');
+      process.exit(1);
+    }
   }
 
   // Start subsystems (independently of connection handler)
