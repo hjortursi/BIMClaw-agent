@@ -1,0 +1,10 @@
+.git
+.github
+node_modules
+dist
+store
+data
+logs
+.nanoclaw
+*.log
+.DS_Store

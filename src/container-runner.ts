@@ -144,12 +144,16 @@ function buildVolumeMounts(
     );
   }
 
-  // Sync skills from container/skills/ into each group's .claude/skills/
-  const skillsSrc = path.join(process.cwd(), 'container', 'skills');
+  // Sync built-in skills + BIM skills into each group's .claude/skills/
   const skillsDst = path.join(groupSessionsDir, 'skills');
-  if (fs.existsSync(skillsSrc)) {
-    for (const skillDir of fs.readdirSync(skillsSrc)) {
-      const srcDir = path.join(skillsSrc, skillDir);
+  const skillSources = [
+    path.join(process.cwd(), 'container', 'skills'),
+    path.join(process.cwd(), '.claude', 'skills', 'bim'),
+  ];
+  for (const sourceDir of skillSources) {
+    if (!fs.existsSync(sourceDir)) continue;
+    for (const skillDir of fs.readdirSync(sourceDir)) {
+      const srcDir = path.join(sourceDir, skillDir);
       if (!fs.statSync(srcDir).isDirectory()) continue;
       const dstDir = path.join(skillsDst, skillDir);
       fs.cpSync(srcDir, dstDir, { recursive: true });
